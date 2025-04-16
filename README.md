@@ -472,6 +472,44 @@ $ sudo semanage fcontext -a -t systemd_unit_file_t "/etc/systemd/system/containe
 $ ls -Z /etc/systemd/system/container-pikachu.service
 ```
 
+## Service Setup
+
+### Question
+Ensure the httpd service is installed, running, and set to persist across reboots.
+
+### Tasks
+- Install the httpd service if not present
+- Start the service
+- Enable the service to start on boot
+- Verify the service status
+
+### Solution
+
+```bash
+# Install httpd if not already installed
+$ sudo dnf install -y httpd
+
+# Start the httpd service
+$ sudo systemctl start httpd
+
+# Enable httpd to start on boot
+$ sudo systemctl enable httpd
+
+# Verify the service is running
+$ sudo systemctl status httpd
+
+# Verify the service will start on boot
+$ sudo systemctl is-enabled httpd
+
+# Optional: Test the web server
+$ curl http://localhost
+```
+
+Note: 
+- The `-y` flag with dnf automatically answers yes to prompts
+- The service should show as "active (running)" in the status output
+- The service should show as "enabled" in the is-enabled output
+
 ## Network Config
 
 ### Question
@@ -568,3 +606,94 @@ $ sudo systemctl enable --now autofs
 # Verify the mount
 $ ls /mnt/nfs
 ```
+
+## Podman- Pull & Tag
+
+### Question
+As root, pull the nginx image from Docker Hub using podman and tag it as nginx:examprep.
+
+### Tasks
+- Use podman pull to download the nginx image from Docker Hub
+- Tag the image as nginx:examprep
+- Confirm the image is tagged correctly by listing your Podman images
+
+### Solution
+
+```bash
+# Pull the nginx image from Docker Hub
+$ sudo podman pull nginx
+
+# Tag the image as nginx:examprep
+$ sudo podman tag nginx nginx:examprep
+
+# Verify the image and its tag
+$ sudo podman images
+# You should see both:
+# docker.io/library/nginx    latest    ...    ...
+# nginx                     examprep  ...    ...
+```
+
+## Podman- Volumes
+
+### Question
+As root, create a container named toystory using the nginx:examprep image with a volume mapping from /home/student/woody to /buzz.
+
+### Tasks
+- Create a directory at /home/student/woody
+- Create a container named toystory from nginx:examprep image
+- Map the volume from /home/student/woody to /buzz in the container
+- Verify the container is running with the volume attached
+
+### Solution
+
+```bash
+# Create the directory for volume mapping
+$ sudo mkdir -p /home/student/woody
+
+# Create and run the container with volume mapping
+$ sudo podman run -d --name toystory -v /home/student/woody:/buzz nginx:examprep
+
+# Verify the container is running
+$ sudo podman ps
+
+# Verify the volume is mounted correctly
+$ sudo podman exec toystory ls -l /buzz
+```
+
+## Podman- Systemd
+
+### Question
+Create a systemd service for the toystory container to ensure it starts on boot.
+
+### Tasks
+- Create a systemd service file for the toystory container
+- Configure the service to start on boot
+- Enable and start the service
+- Verify the container persists after reboot
+
+### Solution
+
+```bash
+# Create the systemd service file
+$ sudo podman generate systemd --name toystory > /etc/systemd/system/container-toystory.service
+
+# Reload systemd to recognize the new service
+$ sudo systemctl daemon-reload
+
+# Enable the service to start on boot
+$ sudo systemctl enable container-toystory.service
+
+# Start the service
+$ sudo systemctl start container-toystory.service
+
+# Verify the service is running
+$ sudo systemctl status container-toystory.service
+
+# Verify the container is running
+$ sudo podman ps
+```
+
+Note: 
+- The `podman generate systemd` command creates a service file with all necessary container parameters
+- The service will automatically handle container recreation if it stops
+- The volume mapping from the previous task will be preserved
